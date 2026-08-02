@@ -4,6 +4,27 @@ A REST API like bit.ly, built with **Java + Spring Boot + PostgreSQL**. Register
 
 > **Resume line:** Designed and deployed a REST API for URL shortening with click analytics using Java, Spring Boot, and PostgreSQL; implemented indexed schema design, JWT authentication, parameterised queries, and per-day analytics aggregation.
 
+## Live demo
+
+**Base URL:** https://shortly-url-shortener-fmg5.onrender.com
+
+```bash
+BASE=https://shortly-url-shortener-fmg5.onrender.com
+
+# Register — returns a JWT, so you're logged in immediately
+TOKEN=$(curl -s -X POST $BASE/api/auth/public/register \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"demo1","email":"demo1@test.com","password":"Pass1234"}' | jq -r .token)
+
+# Shorten a URL (201)
+curl -X POST $BASE/api/url/shorten \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"originalUrl":"https://www.wikipedia.org/"}'
+# -> {"shortUrl":"Abc123Xy", ...}   then open $BASE/Abc123Xy in a browser
+```
+
+> Hosted on Render's free tier, so the first request after ~15 min of inactivity takes ~30–50s while the service wakes from sleep.
+
 ## Features
 
 - **Shorten URLs** — collision-free 8-character codes, with validation (rejects non-`http(s)` input)
@@ -30,7 +51,7 @@ Auth endpoints are public; all `/api/url/**` endpoints require a `Bearer <jwt>` 
 
 | Method | Endpoint | Description | Success |
 |--------|----------|-------------|---------|
-| `POST` | `/api/auth/public/register` | Register a user | `200` |
+| `POST` | `/api/auth/public/register` | Register a user, returns `{ token }` | `200` |
 | `POST` | `/api/auth/public/login` | Log in, returns `{ token }` | `200` |
 | `POST` | `/api/url/shorten` | `{ "originalUrl": "..." }` → short code | `201` |
 | `GET`  | `/{shortCode}` | Redirect to original URL + log click | `302` |
@@ -44,14 +65,10 @@ Auth endpoints are public; all `/api/url/**` endpoints require a `Bearer <jwt>` 
 ### Example
 
 ```bash
-# 1. Register + login
-curl -X POST localhost:8081/api/auth/public/register \
+# 1. Register (returns a JWT) — or POST /api/auth/public/login with the same body later
+TOKEN=$(curl -s -X POST localhost:8081/api/auth/public/register \
   -H 'Content-Type: application/json' \
-  -d '{"username":"demo","email":"demo@test.com","password":"Pass1234"}'
-
-TOKEN=$(curl -s -X POST localhost:8081/api/auth/public/login \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"demo","password":"Pass1234"}' | jq -r .token)
+  -d '{"username":"demo","email":"demo@test.com","password":"Pass1234"}' | jq -r .token)
 
 # 2. Shorten (201)
 curl -X POST localhost:8081/api/url/shorten \

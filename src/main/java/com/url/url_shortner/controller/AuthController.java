@@ -31,8 +31,8 @@ public class AuthController {
         user.setPassword(registerRequest.getPassword());
         user.setUserName(registerRequest.getUsername());
         user.setRole("ROLE_USER");
-        userService.registerUser(user);
-        return ResponseEntity.ok("User reg sucessfully");
+        // Returns a JWT so the client is authenticated right away (no separate login call needed).
+        return ResponseEntity.ok(userService.registerUser(user));
     }
 
 }

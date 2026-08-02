@@ -121,6 +121,25 @@ class UrlShortenerIntegrationTests {
     }
 
     @Test
+    void register_returnsTokenUsableImmediately() throws Exception {
+        // Registration auto-issues a JWT; it should work on a protected endpoint with no separate login.
+        String username = "auto_" + System.nanoTime();
+        MvcResult reg = mvc.perform(post("/api/auth/public/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(Map.of(
+                                "username", username,
+                                "email", username + "@test.com",
+                                "password", "Pass1234"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andReturn();
+
+        String token = mapper.readTree(reg.getResponse().getContentAsString()).get("token").asText();
+        mvc.perform(get("/api/url/myurls").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void register_missingPassword_returns400() throws Exception {
         // exercises the global exception handler (was a 500 before)
         String username = "nopass_" + System.nanoTime();

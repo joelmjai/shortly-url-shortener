@@ -22,10 +22,14 @@ public class UserService {
     private AuthenticationManager authenticationManager;
     private JwtUtils jwtutils;
 
-    public User registerUser( User user)
+    public JwtAuthenticationResponse registerUser( User user)
     {
         user.setPassword(passwordEncoder.encode(user.getPassword()) );
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        // Issue a token straight from the just-saved user so the client is logged in
+        // immediately, avoiding a second (read-after-write) round-trip to log in.
+        String jwt = jwtutils.generateToken(UserDetailsImpl.build(saved));
+        return new JwtAuthenticationResponse(jwt);
     }
     public JwtAuthenticationResponse authenticateUser(LoginRequest loginRequest)
     {
