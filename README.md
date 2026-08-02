@@ -31,6 +31,7 @@ curl -X POST $BASE/api/url/shorten \
 - **Redirect + click logging** — `302` redirect to the original URL, recording timestamp and referrer
 - **Analytics** — clicks per day, total clicks across a date range, and top referrers
 - **JWT authentication** — register / login; each user manages only their own URLs
+- **Rate limiting** — per-user token bucket on the shorten endpoint (default 10 requests/minute), returning `429 Too Many Requests` with a `Retry-After` header
 - **Clean error handling** — a global exception handler returns consistent `400`s for bad input
 - **Tested** — integration tests over an in-memory H2 database (no external DB needed to run them)
 
@@ -60,7 +61,9 @@ Auth endpoints are public; all `/api/url/**` endpoints require a `Bearer <jwt>` 
 | `GET`  | `/api/url/totalClicks?startDate=&endDate=` | Total clicks per day across the user's URLs | `200` |
 | `GET`  | `/api/url/referrers/{shortCode}` | Click counts grouped by referrer | `200` |
 
-**Status codes:** invalid URL → `400`, unknown short code → `404`, missing/malformed query params → `400`.
+**Status codes:** invalid URL → `400`, unknown short code → `404`, missing/malformed query params → `400`, too many shorten requests → `429`.
+
+The shorten endpoint is rate-limited per user (configurable via `ratelimit.shorten.capacity` and `ratelimit.shorten.window-seconds`).
 
 ### Example
 

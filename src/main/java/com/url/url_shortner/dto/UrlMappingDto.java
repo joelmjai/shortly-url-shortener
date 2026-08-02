@@ -14,4 +14,5 @@ public class UrlMappingDto {
     private int clickCount;
     private LocalDateTime createdDate;
     private String username;
+
 }

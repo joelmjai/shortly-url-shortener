@@ -3,6 +3,7 @@ package com.url.url_shortner.controller;
 import com.url.url_shortner.dto.ClickEventDto;
 import com.url.url_shortner.dto.UrlMappingDto;
 import com.url.url_shortner.models.User;
+import com.url.url_shortner.service.RateLimiterService;
 import com.url.url_shortner.service.UrlMappingService;
 import com.url.url_shortner.service.UserService;
 import lombok.AllArgsConstructor;
@@ -28,11 +29,18 @@ public class UrlMappingController {
 
 
     private UserService userService;
+
+    private RateLimiterService rateLimiterService;
     //{"originalUrl":"https://example.com"}
     //https://abc.com/CflPwBQH-->https://example.com
     @PostMapping("/shorten")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> createShortUrl(@RequestBody Map<String, String> request, Principal principal) {
+        if (!rateLimiterService.tryConsume(principal.getName())) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .header("Retry-After", "60")
+                    .body(Map.of("error", "Rate limit exceeded. Please slow down and try again shortly."));
+        }
         String originalUrl = request.get("originalUrl");
         if (!isValidUrl(originalUrl)) {
             return ResponseEntity.badRequest()

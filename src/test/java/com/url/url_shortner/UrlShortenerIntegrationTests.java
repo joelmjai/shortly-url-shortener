@@ -140,6 +140,25 @@ class UrlShortenerIntegrationTests {
     }
 
     @Test
+    void shorten_exceedingRateLimit_returns429() throws Exception {
+        // Test config sets capacity=3, so the 4th shorten by the same user is rejected.
+        String token = registerAndLogin();
+        for (int i = 1; i <= 3; i++) {
+            mvc.perform(post("/api/url/shorten")
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(mapper.writeValueAsString(Map.of("originalUrl", "https://example.com/" + i))))
+                    .andExpect(status().isCreated());
+        }
+        mvc.perform(post("/api/url/shorten")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(Map.of("originalUrl", "https://example.com/over"))))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.error").isNotEmpty());
+    }
+
+    @Test
     void register_missingPassword_returns400() throws Exception {
         // exercises the global exception handler (was a 500 before)
         String username = "nopass_" + System.nanoTime();
